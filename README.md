@@ -66,9 +66,10 @@ rather skip all of the above.
 ## Usage
 
 ```
-kube-why <error>      # what it means, why, how to fix it
-kube-why list          # everything currently covered, by category
-kube-why random        # a random one, for when you're bored or teaching
+kube-why <error>          # what it means, why it happens, how to fix it
+kube-why list              # everything currently covered, by category
+kube-why random            # a random one, for when you're bored or teaching
+kube-why lint <file>       # check a YAML file's syntax before you apply it
 <kubectl cmd> | kube-why   # auto-detect the error from real kubectl output
 ```
 
@@ -79,6 +80,29 @@ Piping works with anything that has the error's reason string in it:
 `kubectl describe pod`, `kubectl get events`, `kubectl describe deployment`,
 even a pasted Slack message from your incident channel. If more than one
 known error shows up in the input, it prints all of them.
+
+### Linting
+
+```
+$ kube-why lint deployment.yaml
+document 1: yaml: line 12: found a tab character that violates indentation
+
+deployment.yaml failed syntax check.
+```
+
+`kube-why lint` checks that a YAML file actually parses, catching the kind of
+mistake, a stray tab, bad indentation, a missing colon, a duplicate key, that
+would otherwise only show up later as a confusing `kubectl apply` error. It
+supports multi-document files (`---`-separated) and reports the exact line.
+It's a syntax check only for now, it doesn't know anything about Kubernetes
+semantics yet (missing resource limits, bad probes, and so on), that's a
+natural next step, not something it does today.
+
+### Color output
+
+Colored output turns off automatically when you pipe or redirect `kube-why`
+(so files and CI logs don't fill up with escape codes), or if you set the
+`NO_COLOR` environment variable, or pass `--no-color` explicitly.
 
 ## What's covered right now
 

@@ -22,14 +22,38 @@ var errorFiles embed.FS
 // GoReleaser sets this to the tag on every release build.
 var version = "dev"
 
-const (
+// Color codes are variables, not constants, so disableColor can blank them
+// out once at startup for non-terminal output, NO_COLOR, or --no-color,
+// without every print call needing to check a flag individually.
+var (
 	colorReset  = "\033[0m"
 	colorBold   = "\033[1m"
 	colorCyan   = "\033[36m"
 	colorGreen  = "\033[32m"
 	colorDim    = "\033[2m"
 	colorYellow = "\033[33m"
+	colorRed    = "\033[31m"
 )
+
+func disableColor() {
+	colorReset, colorBold, colorCyan = "", "", ""
+	colorGreen, colorDim, colorYellow, colorRed = "", "", "", ""
+}
+
+// colorShouldBeOff follows the same convention most terminal tools use:
+// respect NO_COLOR (https://no-color.org) if set to anything, and disable
+// automatically when output isn't going to a terminal (piped to a file,
+// captured in CI, etc.), since ANSI codes just show up as literal garbage
+// there.
+func colorShouldBeOff(noColorFlag bool) bool {
+	if noColorFlag {
+		return true
+	}
+	if _, set := os.LookupEnv("NO_COLOR"); set {
+		return true
+	}
+	return isPiped(os.Stdout)
+}
 
 type entry struct {
 	slug     string
@@ -47,6 +71,22 @@ func main() {
 	}
 
 	args := os.Args[1:]
+
+	noColorFlag := false
+	filtered := args[:0]
+	for _, a := range args {
+		if a == "--no-color" {
+			noColorFlag = true
+			continue
+		}
+		filtered = append(filtered, a)
+	}
+	args = filtered
+
+	if colorShouldBeOff(noColorFlag) {
+		disableColor()
+	}
+
 	if len(args) == 0 {
 		if isPiped(os.Stdin) {
 			scanPipedInput(entries, os.Stdin)
@@ -65,6 +105,12 @@ func main() {
 		printList(entries)
 	case "random":
 		printEntry(entries[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(entries))])
+	case "lint":
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "kube-why: lint requires a file, e.g. kube-why lint deployment.yaml")
+			os.Exit(1)
+		}
+		runLint(args[1])
 	default:
 		term := normalize(strings.Join(args, " "))
 		if e := find(entries, term); e != nil {
@@ -273,14 +319,19 @@ func min(a, b int) int {
 func printUsage(entries []entry) {
 	fmt.Printf("%skube-why%s — look up what a Kubernetes error means and how to fix it\n\n", colorBold, colorReset)
 	fmt.Println("Usage:")
-	fmt.Println("  kube-why <error>       print what it means, why it happens, how to fix it")
-	fmt.Println("  kube-why list          list every error currently covered")
-	fmt.Println("  kube-why random        print a random one")
+	fmt.Println("  kube-why <error>          print what it means, why it happens, how to fix it")
+	fmt.Println("  kube-why list             list every error currently covered")
+	fmt.Println("  kube-why random           print a random one")
+	fmt.Println("  kube-why lint <file>      check a YAML file's syntax before you apply it")
+	fmt.Println("  <kubectl cmd> | kube-why  auto-detect the error from piped kubectl output")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  kube-why crashloopbackoff")
 	fmt.Println("  kube-why oomkilled")
 	fmt.Println("  kube-why \"image pull backoff\"")
+	fmt.Println("  kube-why lint deployment.yaml")
+	fmt.Println()
+	fmt.Println("Add --no-color to disable colored output, or set NO_COLOR.")
 	fmt.Printf("\n%d errors covered. Run 'kube-why list' to see them all.\n", len(entries))
 }
 
