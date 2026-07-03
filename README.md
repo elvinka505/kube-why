@@ -113,14 +113,17 @@ Colored output turns off automatically when you pipe or redirect `kube-why`
 
 ## What's covered right now
 
-60 entries across three packs:
+88 entries across three packs:
 
 - **`kubernetes`** (48) — pods, scheduling, deployments, jobs, HPAs, storage,
   networking, ingress, RBAC, webhooks, and node-level conditions.
-- **`docker`** (10) — daemon connectivity, container/network conflicts,
-  disk pressure, architecture mismatches, registry auth, build-context
+- **`docker`** (25) — daemon connectivity, container/network/volume
+  conflicts, disk pressure, architecture mismatches, registry auth,
+  Dockerfile and BuildKit failures, Compose ordering issues, Docker
+  Desktop-specific failures.
+- **`helm`** (15) — release conflicts, values schema validation, template
+  rendering failures, chart dependencies, hooks, and repository/chart-fetch
   errors.
-- **`helm`** (2) — stuck releases and failed upgrades.
 
 Run `kube-why list` for the current, authoritative, categorized list, or
 `kube-why list docker` to see just one pack.

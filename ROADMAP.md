@@ -33,8 +33,8 @@ kube-why list             # see everything, grouped by pack, then category
 | Pack | Entries | Status |
 |---|---|---|
 | `kubernetes` | 48 | Established, the original scope |
-| `helm` | 2 | Started, needs more entries |
-| `docker` | 10 | Started |
+| `docker` | 25 | Established |
+| `helm` | 15 | Established |
 
 ## Planned packs, open for contribution
 
@@ -43,9 +43,7 @@ create `packs/<name>/`, add a handful of entries following the existing
 format, open a PR. No changes to the core engine required.
 
 - **Terraform** — `Error: Cycle`, state lock errors, provider auth failures,
-  drift-related apply failures.
-- **Helm** — expanding past the 2 seed entries (`values` schema validation
-  failures, chart dependency resolution, hooks that silently fail).
+  drift-related apply failures. See [issue #1](https://github.com/Ayushmore1214/kube-why/issues/1).
 - **CI/CD** (GitHub Actions specifically to start) — cryptic workflow syntax
   errors, permission errors on `GITHUB_TOKEN`, matrix build failures.
 
