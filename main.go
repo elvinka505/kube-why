@@ -1,6 +1,12 @@
-// kube-why looks up a Kubernetes error and prints what it means, why it
+// kube-why looks up a cloud-native error and prints what it means, why it
 // usually happens, and how to fix it. No network calls, no dependencies,
 // everything ships baked into the binary.
+//
+// Content is organized into "packs", one directory per ecosystem
+// (packs/kubernetes, packs/docker, packs/helm, ...). The lookup engine
+// itself doesn't know anything about Kubernetes specifically, a pack is
+// just a directory of entries, so adding a new ecosystem is a new
+// directory, not a code change.
 package main
 
 import (
@@ -15,8 +21,8 @@ import (
 	"time"
 )
 
-//go:embed errors/*.md
-var errorFiles embed.FS
+//go:embed packs
+var packFiles embed.FS
 
 // version is set at build time via -ldflags "-X main.version=...".
 // GoReleaser sets this to the tag on every release build.
@@ -56,6 +62,7 @@ func colorShouldBeOff(noColorFlag bool) bool {
 }
 
 type entry struct {
+	pack     string
 	slug     string
 	title    string
 	aliases  []string
@@ -102,7 +109,11 @@ func main() {
 	case "-v", "--version", "version":
 		fmt.Println("kube-why", version)
 	case "list":
-		printList(entries)
+		packFilter := ""
+		if len(args) > 1 {
+			packFilter = normalize(args[1])
+		}
+		printList(entries, packFilter)
 	case "random":
 		printEntry(entries[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(entries))])
 	case "lint":
@@ -133,28 +144,45 @@ func main() {
 }
 
 func loadEntries() ([]entry, error) {
-	files, err := errorFiles.ReadDir("errors")
+	packs, err := packFiles.ReadDir("packs")
 	if err != nil {
 		return nil, err
 	}
 
 	var entries []entry
-	for _, f := range files {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".md") {
+	for _, p := range packs {
+		if !p.IsDir() {
 			continue
 		}
-		raw, err := errorFiles.ReadFile(path.Join("errors", f.Name()))
+		pack := p.Name()
+
+		files, err := packFiles.ReadDir(path.Join("packs", pack))
 		if err != nil {
 			return nil, err
 		}
-		e, err := parseEntry(strings.TrimSuffix(f.Name(), ".md"), string(raw))
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", f.Name(), err)
+		for _, f := range files {
+			if f.IsDir() || !strings.HasSuffix(f.Name(), ".md") {
+				continue
+			}
+			raw, err := packFiles.ReadFile(path.Join("packs", pack, f.Name()))
+			if err != nil {
+				return nil, err
+			}
+			e, err := parseEntry(strings.TrimSuffix(f.Name(), ".md"), string(raw))
+			if err != nil {
+				return nil, fmt.Errorf("%s/%s: %w", pack, f.Name(), err)
+			}
+			e.pack = pack
+			entries = append(entries, e)
 		}
-		entries = append(entries, e)
 	}
 
-	sort.Slice(entries, func(i, j int) bool { return entries[i].title < entries[j].title })
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].pack != entries[j].pack {
+			return entries[i].pack < entries[j].pack
+		}
+		return entries[i].title < entries[j].title
+	})
 	return entries, nil
 }
 
@@ -265,7 +293,12 @@ func scanPipedInput(entries []entry, r io.Reader) {
 		fmt.Fprintln(os.Stderr, "kube-why: failed to read stdin:", err)
 		os.Exit(1)
 	}
-	haystack := strings.ReplaceAll(strings.ToLower(string(data)), "-", "")
+	// Use the same normalization as direct lookups (lowercase, strip spaces/
+	// hyphens/underscores). Kubernetes reason strings (CrashLoopBackOff) are
+	// already single tokens so this didn't matter before, but other packs'
+	// error text is often multi-word prose, without this, a multi-word
+	// alias could never match piped input at all.
+	haystack := normalize(string(data))
 
 	var matches []entry
 	for _, e := range entries {
@@ -316,40 +349,78 @@ func min(a, b int) int {
 	return b
 }
 
+func packNames(entries []entry) []string {
+	seen := map[string]bool{}
+	var packs []string
+	for _, e := range entries {
+		if !seen[e.pack] {
+			seen[e.pack] = true
+			packs = append(packs, e.pack)
+		}
+	}
+	sort.Strings(packs)
+	return packs
+}
+
 func printUsage(entries []entry) {
-	fmt.Printf("%skube-why%s — look up what a Kubernetes error means and how to fix it\n\n", colorBold, colorReset)
+	fmt.Printf("%skube-why%s — look up what a cloud-native error means and how to fix it\n\n", colorBold, colorReset)
 	fmt.Println("Usage:")
 	fmt.Println("  kube-why <error>          print what it means, why it happens, how to fix it")
-	fmt.Println("  kube-why list             list every error currently covered")
+	fmt.Println("  kube-why list [pack]      list everything covered, optionally for one pack")
 	fmt.Println("  kube-why random           print a random one")
 	fmt.Println("  kube-why lint <file>      check a YAML file's syntax before you apply it")
-	fmt.Println("  <kubectl cmd> | kube-why  auto-detect the error from piped kubectl output")
+	fmt.Println("  <cmd> | kube-why          auto-detect the error from piped command output")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  kube-why crashloopbackoff")
 	fmt.Println("  kube-why oomkilled")
 	fmt.Println("  kube-why \"image pull backoff\"")
 	fmt.Println("  kube-why lint deployment.yaml")
+	fmt.Println("  kube-why list docker")
 	fmt.Println()
 	fmt.Println("Add --no-color to disable colored output, or set NO_COLOR.")
-	fmt.Printf("\n%d errors covered. Run 'kube-why list' to see them all.\n", len(entries))
+	fmt.Printf("\n%d entries across %d packs: %s. Run 'kube-why list' to see them all.\n",
+		len(entries), len(packNames(entries)), strings.Join(packNames(entries), ", "))
 }
 
-func printList(entries []entry) {
-	byCategory := map[string][]entry{}
+func printList(entries []entry, packFilter string) {
+	byPack := map[string][]entry{}
 	for _, e := range entries {
-		byCategory[e.category] = append(byCategory[e.category], e)
+		if packFilter != "" && normalize(e.pack) != packFilter {
+			continue
+		}
+		byPack[e.pack] = append(byPack[e.pack], e)
 	}
-	var categories []string
-	for c := range byCategory {
-		categories = append(categories, c)
-	}
-	sort.Strings(categories)
 
-	for _, c := range categories {
-		fmt.Printf("%s%s%s%s\n", colorBold, colorCyan, strings.ToUpper(c), colorReset)
-		for _, e := range byCategory[c] {
-			fmt.Printf("  %-28s %s\n", e.title, colorDim+e.slug+colorReset)
+	if len(byPack) == 0 {
+		fmt.Printf("kube-why: no pack named %q. Packs: %s\n", packFilter, strings.Join(packNames(entries), ", "))
+		os.Exit(1)
+	}
+
+	var packs []string
+	for p := range byPack {
+		packs = append(packs, p)
+	}
+	sort.Strings(packs)
+
+	for _, pack := range packs {
+		fmt.Printf("%s%s%s\n", colorBold, strings.ToUpper(pack), colorReset)
+
+		byCategory := map[string][]entry{}
+		for _, e := range byPack[pack] {
+			byCategory[e.category] = append(byCategory[e.category], e)
+		}
+		var categories []string
+		for c := range byCategory {
+			categories = append(categories, c)
+		}
+		sort.Strings(categories)
+
+		for _, c := range categories {
+			fmt.Printf("  %s%s%s%s\n", colorCyan, strings.ToUpper(c), colorReset, "")
+			for _, e := range byCategory[c] {
+				fmt.Printf("    %-26s %s\n", e.title, colorDim+e.slug+colorReset)
+			}
 		}
 		fmt.Println()
 	}
@@ -373,12 +444,16 @@ func printEntry(e entry) {
 	}
 }
 
-// colorizeInline dims lines that look like shell commands (rough heuristic:
-// starts with kubectl, or is indented as part of a fenced block).
+// colorizeInline highlights lines that look like real commands to run,
+// recognized by the tool name a pack's examples actually use (kubectl for
+// the kubernetes pack, docker for the docker pack, and so on).
 func colorizeInline(line string) string {
 	trimmed := strings.TrimSpace(line)
-	if strings.HasPrefix(trimmed, "kubectl") || strings.HasPrefix(trimmed, "$") {
-		return colorGreen + line + colorReset
+	commandPrefixes := []string{"kubectl", "docker", "helm", "$"}
+	for _, p := range commandPrefixes {
+		if strings.HasPrefix(trimmed, p) {
+			return colorGreen + line + colorReset
+		}
 	}
 	return line
 }

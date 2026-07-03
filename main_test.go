@@ -38,11 +38,35 @@ func TestNoDuplicateAliasesAcrossEntries(t *testing.T) {
 			if key == "" {
 				continue
 			}
-			if prev, exists := owner[key]; exists && prev != e.slug {
-				t.Errorf("alias %q is claimed by both %q and %q, they'll silently shadow each other", key, prev, e.slug)
+			id := e.pack + "/" + e.slug
+			if prev, exists := owner[key]; exists && prev != id {
+				t.Errorf("alias %q is claimed by both %q and %q, they'll silently shadow each other", key, prev, id)
 			}
-			owner[key] = e.slug
+			owner[key] = id
 		}
+	}
+}
+
+func TestEveryEntryHasAPack(t *testing.T) {
+	entries, err := loadEntries()
+	if err != nil {
+		t.Fatalf("loadEntries() failed: %v", err)
+	}
+	for _, e := range entries {
+		if e.pack == "" {
+			t.Errorf("entry %q has no pack, it won't be reachable via 'kube-why list <pack>'", e.slug)
+		}
+	}
+}
+
+func TestAtLeastTwoPacksExist(t *testing.T) {
+	entries, err := loadEntries()
+	if err != nil {
+		t.Fatalf("loadEntries() failed: %v", err)
+	}
+	packs := packNames(entries)
+	if len(packs) < 2 {
+		t.Fatalf("expected at least 2 packs (kubernetes + one more), got %v", packs)
 	}
 }
 

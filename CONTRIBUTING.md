@@ -3,11 +3,11 @@
 The whole point of this project is that adding an entry should be easy. One
 file, one PR.
 
-## Adding a new error
+## Adding a new error to an existing pack
 
-1. Copy the template below into `errors/<slug>.md`. The slug is the filename,
-   lowercase, words separated by hyphens (`invalid-image-name.md`, not
-   `InvalidImageName.md`).
+1. Copy the template below into `packs/<pack>/<slug>.md`, e.g.
+   `packs/docker/container-name-conflict.md`. The slug is the filename,
+   lowercase, words separated by hyphens.
 2. Fill it in based on something you've actually debugged, not a summary of
    someone else's blog post. If you had to figure it out the hard way, that's
    exactly the knowledge this project wants.
@@ -15,8 +15,16 @@ file, one PR.
    ```
    go run . <your-slug-or-alias>
    ```
-4. Open a PR with just that one file (plus README.md's covered-errors list if
-   you want to keep it in sync, not required).
+4. Open a PR with just that one file (plus README.md's covered-count if you
+   want to keep it in sync, not required).
+
+## Adding a new pack
+
+See [ROADMAP.md](ROADMAP.md) for which packs are already planned (Terraform,
+CI/CD). Create `packs/<name>/` with at least one entry following the format
+below, the lookup engine picks it up automatically, no code changes needed.
+A pack doesn't need to be complete to merge, a handful of real, well-written
+entries is a legitimate starting point others can build on.
 
 ### Template
 
@@ -30,7 +38,7 @@ category: pod
 # YourErrorName
 
 ## What it means
-One or two sentences. What is Kubernetes actually telling you here, in plain
+One or two sentences. What is the tool actually telling you here, in plain
 language, not a restatement of the error string.
 
 ## Common causes
@@ -38,7 +46,7 @@ Ranked roughly by how often you'll actually see them, not an exhaustive list
 of every theoretical cause. Three to five is usually right.
 
 ## Check it
-The exact kubectl commands to confirm which cause you're dealing with. Real
+The exact commands to confirm which cause you're dealing with. Real
 commands, not "check the logs." Explain what to look for in the output, not
 just what command to run.
 
@@ -50,11 +58,20 @@ there's a quick mitigation and a real fix, say which is which.
 Two or three other entries someone debugging this might also need.
 ```
 
-`category` should be one of: `pod`, `deployment`, `scheduling`, `node`,
-`networking`, `ingress`, `job`, `hpa`, `namespace`, `webhook`, `helm`,
-`storage`, `statefulset`, `quota`, `podsecurity`, `apiserver`,
-`container-runtime`, `rbac`, or a new one if none of those fit (say why in
-the PR).
+`category` groups entries within a pack's `kube-why list` output, it's
+pack-specific. The `kubernetes` pack currently uses: `pod`, `deployment`,
+`scheduling`, `node`, `networking`, `ingress`, `job`, `hpa`, `namespace`,
+`webhook`, `storage`, `statefulset`, `quota`, `podsecurity`, `apiserver`,
+`container-runtime`, `rbac`. The `docker` pack uses: `daemon`, `container`,
+`networking`, `storage`, `runtime`, `registry`, `build`. Add a new category
+if none of those fit, it's cheap, just say why in the PR.
+
+Aliases matter more than usual for piped-input detection (`<cmd> |
+kube-why`): include at least one alias that's a fixed substring of the
+real tool's actual error text. If that text interpolates something
+variable in the middle (a name, an ID), pick a fixed chunk before or after
+the variable part, not the whole phrase, otherwise it will never match
+piped input even though direct lookup by name still works fine.
 
 ## What makes a good entry
 
