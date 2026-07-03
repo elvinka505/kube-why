@@ -1,6 +1,6 @@
 ---
 title: Ingress returning 503 Service Unavailable
-aliases: [ingress503, serviceunavailable, 503-service-unavailable]
+aliases: [ingress503, serviceunavailable, 503-service-unavailable, ingress503serviceunavailable]
 category: ingress
 ---
 

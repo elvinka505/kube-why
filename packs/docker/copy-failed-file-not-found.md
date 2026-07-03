@@ -1,6 +1,6 @@
 ---
 title: COPY failed, file not found in build context
-aliases: [copyfailednosuchfileordirectory, filenotfoundinbuildcontext, copyfailedforbiddenpath]
+aliases: [copyfailednosuchfileordirectory, filenotfoundinbuildcontext, copyfailedforbiddenpath, copyfailedfilenotfoundinbuildcontext]
 category: build
 ---
 

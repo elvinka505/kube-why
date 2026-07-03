@@ -1,6 +1,6 @@
 ---
 title: HPA can't get metrics (FailedGetResourceMetric)
-aliases: [failedgetresourcemetric, hpa-no-metrics, unabletofetchmetrics]
+aliases: [failedgetresourcemetric, hpa-no-metrics, unabletofetchmetrics, hpafailedgetresourcemetric]
 category: hpa
 ---
 

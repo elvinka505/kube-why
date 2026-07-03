@@ -1,6 +1,6 @@
 ---
 title: version in docker-compose.yml is unsupported
-aliases: [versionindockercomposeisunsupported, composefileversionunsupported]
+aliases: [versionindockercomposeisunsupported, composefileversionunsupported, composeversionunsupported]
 category: build
 ---
 

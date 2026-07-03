@@ -61,6 +61,18 @@ there's a quick mitigation and a real fix, say which is which.
 Two or three other entries someone debugging this might also need.
 ```
 
+Keep `title` short, the actual name of the error, not a full sentence
+describing it. It's what shows up in `kube-why list` and what people will
+try typing directly; save the elaboration for "What it means". If an
+existing title is already a full sentence (some are), don't fix that in an
+unrelated PR, just don't add new ones like it.
+
+If you reference another entry in a `## Related` list, use a name someone
+could actually type and have it resolve, ideally an exact alias on that
+entry, not an invented shorthand. If the entry you're pointing at doesn't
+have a short alias that matches what you want to call it, add one to that
+entry too, in the same PR.
+
 `category` groups entries within a pack's `kube-why list` output, it's
 pack-specific. The `kubernetes` pack currently uses: `pod`, `deployment`,
 `scheduling`, `node`, `networking`, `ingress`, `job`, `hpa`, `namespace`,

@@ -1,6 +1,6 @@
 ---
 title: permission denied on a bind-mounted volume
-aliases: [permissiondeniedbindmount, eaccespermissiondeniedvolume]
+aliases: [permissiondeniedbindmount, eaccespermissiondeniedvolume, bindmountpermissiondenied]
 category: storage
 ---
 

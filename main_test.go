@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLoadEntriesNoErrors(t *testing.T) {
 	entries, err := loadEntries()
@@ -136,6 +139,35 @@ func TestParseEntryRejectsMissingTitle(t *testing.T) {
 	_, err := parseEntry("broken", raw)
 	if err == nil {
 		t.Fatal("expected an error for a frontmatter block with no title")
+	}
+}
+
+func TestRelatedEntriesResolve(t *testing.T) {
+	entries, err := loadEntries()
+	if err != nil {
+		t.Fatalf("loadEntries() failed: %v", err)
+	}
+
+	for _, e := range entries {
+		idx := strings.Index(e.body, "## Related")
+		if idx == -1 {
+			t.Errorf("entry %q has no Related section", e.slug)
+			continue
+		}
+		lines := strings.Split(e.body[idx:], "\n")
+		for _, line := range lines[1:] {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			if !strings.HasPrefix(line, "-") {
+				break
+			}
+			name := strings.TrimSpace(strings.TrimPrefix(line, "-"))
+			if find(entries, normalize(name)) == nil {
+				t.Errorf("%s/%s: Related entry %q doesn't resolve, it'll look like a dead reference to anyone who types it", e.pack, e.slug, name)
+			}
+		}
 	}
 }
 

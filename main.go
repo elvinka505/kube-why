@@ -342,13 +342,6 @@ func suggest(entries []entry, term string) []string {
 	return out
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func packNames(entries []entry) []string {
 	seen := map[string]bool{}
 	var packs []string
@@ -418,8 +411,14 @@ func printList(entries []entry, packFilter string) {
 
 		for _, c := range categories {
 			fmt.Printf("  %s%s%s%s\n", colorCyan, strings.ToUpper(c), colorReset, "")
+			width := 0
 			for _, e := range byCategory[c] {
-				fmt.Printf("    %-26s %s\n", e.title, colorDim+e.slug+colorReset)
+				if len(e.title) > width {
+					width = len(e.title)
+				}
+			}
+			for _, e := range byCategory[c] {
+				fmt.Printf("    %-*s  %s\n", width, e.title, colorDim+e.slug+colorReset)
 			}
 		}
 		fmt.Println()

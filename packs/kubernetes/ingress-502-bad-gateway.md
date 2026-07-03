@@ -1,6 +1,6 @@
 ---
 title: Ingress returning 502 Bad Gateway
-aliases: [ingress502, badgateway, 502-bad-gateway]
+aliases: [ingress502, badgateway, 502-bad-gateway, ingress502badgateway]
 category: ingress
 ---
 

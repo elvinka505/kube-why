@@ -1,6 +1,6 @@
 ---
 title: Permission denied while connecting to the Docker socket
-aliases: [permissiondeniedwhiletryingtoconnecttothedockerdaemonsocket, gotpermissiondeniedvarrundockersock]
+aliases: [permissiondeniedwhiletryingtoconnecttothedockerdaemonsocket, gotpermissiondeniedvarrundockersock, permissiondenieddockersocket]
 category: daemon
 ---
 

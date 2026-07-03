@@ -1,6 +1,6 @@
 ---
 title: service starts before its dependency is actually ready
-aliases: [servicestartsbeforedependencyisready, dependsonnotwaitingforready]
+aliases: [servicestartsbeforedependencyisready, dependsonnotwaitingforready, composedependsonnotready]
 category: build
 ---
 
