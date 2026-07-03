@@ -88,6 +88,14 @@ func printEntryJSON(e entry) {
 	printJSON(toJSONEntry(e))
 }
 
+func toJSONEntries(entries []entry) []jsonEntry {
+	out := make([]jsonEntry, len(entries))
+	for i, e := range entries {
+		out[i] = toJSONEntry(e)
+	}
+	return out
+}
+
 func printListJSON(entries []entry, packFilter string) {
 	var out []jsonListEntry
 	for _, e := range entries {

@@ -61,6 +61,11 @@ regardless of which pack someone's using:
   break simple substring detection on piped input. The Kubernetes pack
   mostly avoids this because `Reason` fields are fixed enum-style tokens,
   it's a real, live consideration for Docker and will be for Terraform too.
-- `kube-why scan` — point it at a real cluster/host and get a live diagnosis
-  of what's actually unhealthy right now, instead of pasting text in by
-  hand.
+- `kube-why scan` — shipped. Runs `kubectl get pods`/`describe`/`get events`/
+  `get nodes` and `docker ps`/`logs`/`inspect` itself (read-only, never
+  applies or mutates anything) and matches the same way piped input does.
+  Natural follow-ups, none required to use it today: a `helm list
+  --all-namespaces` gatherer for `failed`/`pending-upgrade` releases, a
+  `--namespace` flag to scope Kubernetes scans instead of always going
+  cluster-wide, and the interpolated-error-text matching problem above
+  applies here too since `scan` feeds the same matcher.

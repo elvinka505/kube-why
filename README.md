@@ -115,6 +115,42 @@ It's a syntax check only for now, it doesn't know anything about Kubernetes
 semantics yet (missing resource limits, bad probes, and so on), that's a
 natural next step, not something it does today.
 
+### Scanning a live cluster or host
+
+```
+$ kube-why scan
+kubernetes: 1 unhealthy resource(s) found
+docker: nothing unhealthy found
+
+CrashLoopBackOff
+...
+```
+
+`kube-why scan` runs `kubectl` and/or `docker` itself, whichever is on
+`PATH`, finds anything unhealthy right now (pods not `Running`/`Completed`,
+`Warning` events, `NotReady` nodes, containers not `Up`), and matches it the
+same way piping their output in by hand already does, just without you
+copy-pasting it. Everything it runs is read-only (`get`, `describe`, `ps`,
+`logs`, `inspect`), it never applies, deletes, or restarts anything.
+
+Scope it to one ecosystem with `kube-why scan kubernetes` or `kube-why scan
+docker`. Exit codes are meant for scripting: `0` nothing unhealthy, `1`
+found something, `2` couldn't scan at all (no kubectl/docker on `PATH`, or
+the one you asked for can't actually reach a cluster or daemon, that's
+reported as "couldn't scan," not silently treated as "all clear").
+
+### Shell completion
+
+```
+source <(kube-why completion bash)   # current shell only
+kube-why completion zsh > "${fpath[1]}/_kube-why"
+kube-why completion fish > ~/.config/fish/completions/kube-why.fish
+```
+
+Completions are looked up live (`kube-why __candidates`) rather than baked
+into the script at install time, so they stay correct as new entries get
+added without needing to regenerate anything.
+
 ### Color output
 
 Colored output turns off automatically when you pipe or redirect `kube-why`
@@ -164,8 +200,8 @@ Everyone participating is expected to follow the
 
 See [ROADMAP.md](ROADMAP.md) for the full picture, pack status, planned
 packs open for contribution, and engine-level improvements still on the
-table (`kube-why scan`, a krew plugin, smarter piped-input matching for
-packs whose real error text interpolates variable data mid-string).
+table (a krew plugin, smarter piped-input matching for packs whose real
+error text interpolates variable data mid-string).
 
 ## License
 

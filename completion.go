@@ -8,7 +8,7 @@ import (
 
 // subcommands are the fixed, non-error-lookup words the CLI reserves. They
 // show up in completion candidates alongside every entry's slug.
-var subcommands = []string{"list", "random", "lint", "completion", "help", "version"}
+var subcommands = []string{"list", "random", "lint", "scan", "completion", "help", "version"}
 
 // candidateNames returns every reserved subcommand plus every entry's slug,
 // sorted. Shell completion scripts fetch this at completion time

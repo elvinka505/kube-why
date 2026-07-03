@@ -135,6 +135,12 @@ func main() {
 			os.Exit(1)
 		}
 		runLint(args[1], jsonFlag)
+	case "scan":
+		packFilter := ""
+		if len(args) > 1 {
+			packFilter = normalize(args[1])
+		}
+		runScan(entries, packFilter, jsonFlag)
 	case "completion":
 		if len(args) < 2 {
 			fmt.Fprintln(os.Stderr, "kube-why: completion requires a shell, e.g. kube-why completion bash")
@@ -308,30 +314,18 @@ func isPiped(f *os.File) bool {
 	return (stat.Mode() & os.ModeCharDevice) == 0
 }
 
-// scanPipedInput reads raw kubectl output (describe pod, get events, etc.)
-// and matches any known error signature found in it. Reason strings like
-// CrashLoopBackOff or OOMKilled appear verbatim, with no spaces or hyphens,
-// in real kubectl output, so a plain substring check on a de-hyphenated,
-// lowercased copy of the input is enough, no parsing of kubectl's output
-// format required. Aliases under 5 characters are skipped here (but still
-// work for direct lookups) since short tokens like "oom" risk matching
-// unrelated words in arbitrary pasted text.
-func scanPipedInput(entries []entry, r io.Reader, jsonMode bool) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		if jsonMode {
-			printJSONError(fmt.Sprintf("failed to read stdin: %v", err), nil)
-		} else {
-			fmt.Fprintln(os.Stderr, "kube-why: failed to read stdin:", err)
-		}
-		os.Exit(1)
-	}
-	// Use the same normalization as direct lookups (lowercase, strip spaces/
-	// hyphens/underscores). Kubernetes reason strings (CrashLoopBackOff) are
-	// already single tokens so this didn't matter before, but other packs'
-	// error text is often multi-word prose, without this, a multi-word
-	// alias could never match piped input at all.
-	haystack := normalize(string(data))
+// matchEntries scans arbitrary text (piped kubectl/docker output, or
+// anything `kube-why scan` gathers by running commands itself) for any
+// known error signature and returns every entry whose slug, title, or an
+// alias shows up in it. Reason strings like CrashLoopBackOff or OOMKilled
+// appear verbatim, with no spaces or hyphens, in real kubectl output, so a
+// plain substring check on a de-hyphenated, lowercased copy of the input is
+// enough, no parsing of the source command's output format required.
+// Aliases under 5 characters are skipped here (but still work for direct
+// lookups) since short tokens like "oom" risk matching unrelated words in
+// arbitrary text.
+func matchEntries(entries []entry, text string) []entry {
+	haystack := normalize(text)
 
 	var matches []entry
 	for _, e := range entries {
@@ -347,6 +341,23 @@ func scanPipedInput(entries []entry, r io.Reader, jsonMode bool) {
 			}
 		}
 	}
+	return matches
+}
+
+// scanPipedInput reads raw kubectl/docker output from stdin and reports any
+// known error signature found in it.
+func scanPipedInput(entries []entry, r io.Reader, jsonMode bool) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		if jsonMode {
+			printJSONError(fmt.Sprintf("failed to read stdin: %v", err), nil)
+		} else {
+			fmt.Fprintln(os.Stderr, "kube-why: failed to read stdin:", err)
+		}
+		os.Exit(1)
+	}
+
+	matches := matchEntries(entries, string(data))
 
 	if len(matches) == 0 {
 		if jsonMode {
@@ -359,11 +370,7 @@ func scanPipedInput(entries []entry, r io.Reader, jsonMode bool) {
 	}
 
 	if jsonMode {
-		out := make([]jsonEntry, len(matches))
-		for i, e := range matches {
-			out[i] = toJSONEntry(e)
-		}
-		printJSON(out)
+		printJSON(toJSONEntries(matches))
 		return
 	}
 
@@ -408,6 +415,7 @@ func printUsage(entries []entry) {
 	fmt.Println("  kube-why list [pack]      list everything covered, optionally for one pack")
 	fmt.Println("  kube-why random           print a random one")
 	fmt.Println("  kube-why lint <file>      check a YAML file's syntax before you apply it")
+	fmt.Println("  kube-why scan [pack]      run kubectl/docker yourself and diagnose what's unhealthy now")
 	fmt.Println("  kube-why completion <shell>  print a completion script (bash, zsh, fish)")
 	fmt.Println("  <cmd> | kube-why          auto-detect the error from piped command output")
 	fmt.Println()
@@ -417,11 +425,15 @@ func printUsage(entries []entry) {
 	fmt.Println("  kube-why \"image pull backoff\"")
 	fmt.Println("  kube-why lint deployment.yaml")
 	fmt.Println("  kube-why list docker")
+	fmt.Println("  kube-why scan")
 	fmt.Println("  kube-why oomkilled --json")
 	fmt.Println("  source <(kube-why completion zsh)")
 	fmt.Println()
 	fmt.Println("Add --no-color to disable colored output, or set NO_COLOR.")
-	fmt.Println("Add --json to any lookup, list, random, or lint for machine-readable output.")
+	fmt.Println("Add --json to any lookup, list, random, lint, or scan for machine-readable output.")
+	fmt.Println("scan only ever runs read-only kubectl get/describe and docker ps/logs/inspect,")
+	fmt.Println("it never applies, deletes, or restarts anything. Exit codes: 0 all clear,")
+	fmt.Println("1 found something, 2 couldn't scan (no kubectl/docker on PATH).")
 	fmt.Printf("\n%d entries across %d packs: %s. Run 'kube-why list' to see them all.\n",
 		len(entries), len(packNames(entries)), strings.Join(packNames(entries), ", "))
 }
