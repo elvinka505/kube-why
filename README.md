@@ -141,6 +141,15 @@ more Helm coverage).
 If you don't want to write an entry but know one that's wrong or outdated,
 open an issue, that's just as useful.
 
+Everyone participating is expected to follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+### Contributors
+
+<a href="https://github.com/Ayushmore1214/kube-why/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Ayushmore1214/kube-why" alt="Contributors to kube-why" />
+</a>
+
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the full picture, pack status, planned

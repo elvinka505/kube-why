@@ -3,6 +3,9 @@
 The whole point of this project is that adding an entry should be easy. One
 file, one PR.
 
+By participating, you're expected to follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Adding a new error to an existing pack
 
 1. Copy the template below into `packs/<pack>/<slug>.md`, e.g.
