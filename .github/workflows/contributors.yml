@@ -24,9 +24,9 @@ jobs:
           block=$(gh api "repos/${{ github.repository }}/contributors?per_page=100" --paginate | jq -r '
             [.[] | select(.type != "Bot")] as $people |
             "<table><tr>\n" +
-            ([$people[] | "<td align=\"center\"><a href=\"\(.html_url)\"><img src=\"\(.avatar_url)&s=80\" width=\"80\" height=\"80\" alt=\"\(.login)\"/><br /><sub><b>\(.login)</b></sub></a></td>"]
+            ([$people[] | "<td align=\"center\"><a href=\"\(.html_url)\"><img src=\"\(.avatar_url)&s=60\" width=\"60\" height=\"60\" style=\"border-radius:50%\" alt=\"\(.login)\"/><br /><sub><b>\(.login)</b></sub></a></td>"]
               | to_entries
-              | map(if (.key % 8 == 7) and (.key + 1 < ($people | length)) then .value + "\n</tr><tr>" else .value end)
+              | map(if (.key % 10 == 9) and (.key + 1 < ($people | length)) then .value + "\n</tr><tr>" else .value end)
               | join("\n")
             ) +
             "\n</tr></table>"

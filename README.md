@@ -203,7 +203,7 @@ Everyone who's opened a merged PR, thank you:
 
 <!-- CONTRIBUTORS:START -->
 <table><tr>
-<td align="center"><a href="https://github.com/Ayushmore1214"><img src="https://avatars.githubusercontent.com/u/194600182?v=4&s=80" width="80" height="80" alt="Ayushmore1214"/><br /><sub><b>Ayushmore1214</b></sub></a></td>
+<td align="center"><a href="https://github.com/Ayushmore1214"><img src="https://avatars.githubusercontent.com/u/194600182?v=4&s=60" width="60" height="60" style="border-radius:50%" alt="Ayushmore1214"/><br /><sub><b>Ayushmore1214</b></sub></a></td>
 </tr></table>
 <!-- CONTRIBUTORS:END -->
 
