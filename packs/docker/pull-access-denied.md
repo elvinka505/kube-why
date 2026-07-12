@@ -44,3 +44,4 @@ exist as named.
 
 ## Related
 - ExecFormatError
+- DockerCantReachRegistry

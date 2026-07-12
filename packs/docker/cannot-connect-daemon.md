@@ -44,3 +44,4 @@ specific to whatever command you were originally trying to run.
 
 ## Related
 - PermissionDeniedDockerSocket
+- DockerCantReachRegistry
